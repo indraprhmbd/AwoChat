@@ -1,0 +1,104 @@
+:root {
+  /* Brand Colors */
+  --graphite: #1C1F24;
+  --slate: #2A2F36;
+  --slate-light: #353B44;
+  --slate-dark: #1a1d21;
+  --off-white: #F4F5F7;
+  --muted-green: #5C8D6A;
+  --muted-green-dark: #3d5c47;
+  --soft-blue: #4A6FA5;
+
+  /* Semantic Colors */
+  --bg-primary: var(--graphite);
+  --bg-secondary: var(--slate-dark);
+  --bg-tertiary: var(--slate-light);
+  --text-primary: var(--off-white);
+  --text-secondary: #B0B3B8;
+  --accent: var(--muted-green);
+  --accent-hover: #6DA37C;
+  --error: #E74C3C;
+  --border: #3D4249;
+  
+  /* Spacing */
+  --spacing-xs: 4px;
+  --spacing-sm: 8px;
+  --spacing-md: 16px;
+  --spacing-lg: 24px;
+  --spacing-xl: 32px;
+  
+  /* Typography */
+  --font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-size-sm: 12px;
+  --font-size-base: 14px;
+  --font-size-lg: 16px;
+  --font-size-xl: 20px;
+  
+  /* Other */
+  --radius: 6px;
+  --shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: var(--font-family);
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  font-size: var(--font-size-base);
+  line-height: 1.5;
+}
+
+#root {
+  height: 100vh;
+  width: 100vw;
+}
+
+a {
+  color: var(--soft-blue);
+  text-decoration: none;
+}
+
+a:hover {
+  text-decoration: underline;
+}
+
+button {
+  cursor: pointer;
+  font-family: var(--font-family);
+  border: none;
+  border-radius: var(--radius);
+}
+
+input, textarea {
+  font-family: var(--font-family);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  padding: var(--spacing-sm) var(--spacing-md);
+}
+
+input:focus, textarea:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+/* Utility Classes */
+.flex { display: flex; }
+.flex-col { flex-direction: column; }
+.items-center { align-items: center; }
+.justify-center { justify-content: center; }
+.justify-between { justify-content: space-between; }
+.gap-sm { gap: var(--spacing-sm); }
+.gap-md { gap: var(--spacing-md); }
+.gap-lg { gap: var(--spacing-lg); }
+.p-md { padding: var(--spacing-md); }
+.p-lg { padding: var(--spacing-lg); }
+.m-md { margin: var(--spacing-md); }
+.w-full { width: 100%; }
+.h-full { height: 100%; }

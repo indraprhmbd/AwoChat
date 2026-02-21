@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="200" height="200" viewBox="0 0 200 200">
+  <rect width="200" height="200" fill="#1C1F24"/>
+  <circle cx="100" cy="100" r="60" fill="none" stroke="#5C8D6A" stroke-width="4"/>
+  <path d="M100 60 L100 140 M70 90 L100 60 L130 90" fill="none" stroke="#5C8D6A" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+  <text x="50%" y="85%" text-anchor="middle" fill="#5C8D6A" font-size="24" font-family="Arial">AwoChat</text>
+</svg>
