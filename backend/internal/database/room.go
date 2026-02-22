@@ -20,7 +20,6 @@ var (
 	ErrInviteTokenInvalid = errors.New("invalid invite token")
 )
 
-// CreateRoom creates a new room with the given owner
 func (db *DB) CreateRoom(ctx context.Context, name, ownerID string) (*models.Room, error) {
 	room := &models.Room{
 		ID:          uuid.New().String(),
@@ -36,7 +35,6 @@ func (db *DB) CreateRoom(ctx context.Context, name, ownerID string) (*models.Roo
 	}
 	defer tx.Rollback(ctx)
 
-	// Insert room
 	err = tx.QueryRow(
 		ctx,
 		"INSERT INTO rooms (id, name, owner_id, invite_token) VALUES ($1, $2, $3, $4) RETURNING created_at",
@@ -47,7 +45,6 @@ func (db *DB) CreateRoom(ctx context.Context, name, ownerID string) (*models.Roo
 		return nil, err
 	}
 
-	// Add owner as admin member
 	_, err = tx.Exec(
 		ctx,
 		"INSERT INTO room_members (user_id, room_id, role) VALUES ($1, $2, 'admin')",
@@ -64,7 +61,6 @@ func (db *DB) CreateRoom(ctx context.Context, name, ownerID string) (*models.Roo
 	return room, nil
 }
 
-// GetRoomByID retrieves a room by ID
 func (db *DB) GetRoomByID(ctx context.Context, id string) (*models.Room, error) {
 	room := &models.Room{}
 
@@ -84,7 +80,6 @@ func (db *DB) GetRoomByID(ctx context.Context, id string) (*models.Room, error) 
 	return room, nil
 }
 
-// GetRoomByInviteToken retrieves a room by invite token
 func (db *DB) GetRoomByInviteToken(ctx context.Context, token string) (*models.Room, error) {
 	room := &models.Room{}
 
@@ -104,14 +99,13 @@ func (db *DB) GetRoomByInviteToken(ctx context.Context, token string) (*models.R
 	return room, nil
 }
 
-// GetUserRooms retrieves all rooms a user is a member of
 func (db *DB) GetUserRooms(ctx context.Context, userID string) ([]*models.Room, error) {
 	rows, err := db.Pool.Query(
 		ctx,
-		`SELECT r.id, r.name, r.owner_id, r.invite_token, r.created_at 
-		 FROM rooms r 
-		 JOIN room_members rm ON r.id = rm.room_id 
-		 WHERE rm.user_id = $1 
+		`SELECT r.id, r.name, r.owner_id, r.invite_token, r.created_at
+		 FROM rooms r
+		 JOIN room_members rm ON r.id = rm.room_id
+		 WHERE rm.user_id = $1
 		 ORDER BY r.created_at DESC`,
 		userID,
 	)
@@ -132,7 +126,6 @@ func (db *DB) GetUserRooms(ctx context.Context, userID string) ([]*models.Room, 
 	return rooms, rows.Err()
 }
 
-// GetRoomMemberCount returns the number of members in a room
 func (db *DB) GetRoomMemberCount(ctx context.Context, roomID string) (int, error) {
 	var count int
 	err := db.Pool.QueryRow(
@@ -143,7 +136,6 @@ func (db *DB) GetRoomMemberCount(ctx context.Context, roomID string) (int, error
 	return count, err
 }
 
-// IsRoomMember checks if a user is a member of a room
 func (db *DB) IsRoomMember(ctx context.Context, userID, roomID string) (bool, error) {
 	var exists bool
 	err := db.Pool.QueryRow(
@@ -154,7 +146,6 @@ func (db *DB) IsRoomMember(ctx context.Context, userID, roomID string) (bool, er
 	return exists, err
 }
 
-// GetRoomMemberRole returns the role of a user in a room
 func (db *DB) GetRoomMemberRole(ctx context.Context, userID, roomID string) (string, error) {
 	var role string
 	err := db.Pool.QueryRow(
@@ -173,7 +164,6 @@ func (db *DB) GetRoomMemberRole(ctx context.Context, userID, roomID string) (str
 	return role, nil
 }
 
-// AddRoomMember adds a user to a room with the given role
 func (db *DB) AddRoomMember(ctx context.Context, userID, roomID, role string, maxMembers int) error {
 	tx, err := db.Pool.Begin(ctx)
 	if err != nil {
@@ -181,13 +171,11 @@ func (db *DB) AddRoomMember(ctx context.Context, userID, roomID, role string, ma
 	}
 	defer tx.Rollback(ctx)
 
-	// Lock the room row to prevent concurrent modifications
 	_, err = tx.Exec(ctx, "SELECT 1 FROM rooms WHERE id = $1 FOR UPDATE", roomID)
 	if err != nil {
 		return err
 	}
 
-	// Check current member count (no lock needed since room is locked)
 	var count int
 	err = tx.QueryRow(
 		ctx,
@@ -203,7 +191,6 @@ func (db *DB) AddRoomMember(ctx context.Context, userID, roomID, role string, ma
 		return ErrRoomFull
 	}
 
-	// Check if already a member
 	var exists bool
 	err = tx.QueryRow(
 		ctx,
@@ -219,7 +206,6 @@ func (db *DB) AddRoomMember(ctx context.Context, userID, roomID, role string, ma
 		return ErrAlreadyMember
 	}
 
-	// Add member
 	_, err = tx.Exec(
 		ctx,
 		"INSERT INTO room_members (user_id, room_id, role) VALUES ($1, $2, $3)",
@@ -233,7 +219,6 @@ func (db *DB) AddRoomMember(ctx context.Context, userID, roomID, role string, ma
 	return tx.Commit(ctx)
 }
 
-// RemoveRoomMember removes a user from a room
 func (db *DB) RemoveRoomMember(ctx context.Context, userID, roomID string) error {
 	_, err := db.Pool.Exec(
 		ctx,
@@ -243,14 +228,13 @@ func (db *DB) RemoveRoomMember(ctx context.Context, userID, roomID string) error
 	return err
 }
 
-// GetRoomMembers retrieves all members of a room with their details
 func (db *DB) GetRoomMembers(ctx context.Context, roomID string) ([]*models.User, error) {
 	rows, err := db.Pool.Query(
 		ctx,
-		`SELECT u.id, u.email, u.created_at, rm.role, rm.joined_at 
-		 FROM users u 
-		 JOIN room_members rm ON u.id = rm.user_id 
-		 WHERE rm.room_id = $1 
+		`SELECT u.id, u.email, u.created_at, rm.role, rm.joined_at
+		 FROM users u
+		 JOIN room_members rm ON u.id = rm.user_id
+		 WHERE rm.room_id = $1
 		 ORDER BY rm.joined_at ASC`,
 		roomID,
 	)
@@ -258,12 +242,6 @@ func (db *DB) GetRoomMembers(ctx context.Context, roomID string) ([]*models.User
 		return nil, err
 	}
 	defer rows.Close()
-
-	type UserWithRole struct {
-		User     *models.User
-		Role     string
-		JoinedAt time.Time
-	}
 
 	var members []*models.User
 	for rows.Next() {
@@ -273,15 +251,12 @@ func (db *DB) GetRoomMembers(ctx context.Context, roomID string) ([]*models.User
 		if err := rows.Scan(&user.ID, &user.Email, &user.CreatedAt, &role, &joinedAt); err != nil {
 			return nil, err
 		}
-		_ = role    // Can be used if needed
-		_ = joinedAt // Can be used if needed
 		members = append(members, user)
 	}
 
 	return members, rows.Err()
 }
 
-// IsRoomAdmin checks if a user is an admin of a room
 func (db *DB) IsRoomAdmin(ctx context.Context, userID, roomID string) (bool, error) {
 	var isAdmin bool
 	err := db.Pool.QueryRow(
@@ -292,19 +267,16 @@ func (db *DB) IsRoomAdmin(ctx context.Context, userID, roomID string) (bool, err
 	return isAdmin, err
 }
 
-// UpdateRoomName updates the name of a room
 func (db *DB) UpdateRoomName(ctx context.Context, roomID, name string) error {
 	_, err := db.Pool.Exec(ctx, "UPDATE rooms SET name = $1 WHERE id = $2", name, roomID)
 	return err
 }
 
-// DeleteRoom deletes a room and all its messages/members
 func (db *DB) DeleteRoom(ctx context.Context, roomID string) error {
 	_, err := db.Pool.Exec(ctx, "DELETE FROM rooms WHERE id = $1", roomID)
 	return err
 }
 
-// generateInviteToken generates a random invite token (36 chars)
 func generateInviteToken() string {
 	return uuid.New().String()
 }

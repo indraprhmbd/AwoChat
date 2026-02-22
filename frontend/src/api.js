@@ -2,7 +2,7 @@ const API_BASE = '/api';
 
 export async function apiRequest(endpoint, options = {}) {
   const url = `${API_BASE}${endpoint}`;
-  
+
   const config = {
     ...options,
     headers: {
@@ -11,25 +11,23 @@ export async function apiRequest(endpoint, options = {}) {
     },
     credentials: 'include',
   };
-  
+
   const response = await fetch(url, config);
-  
+
   if (!response.ok) {
     const text = await response.text();
     console.error(`API Error (${response.status}):`, text);
     throw new Error(text || `HTTP ${response.status}`);
   }
-  
-  // Handle empty responses
+
   const contentType = response.headers.get('content-type');
   if (contentType && contentType.includes('application/json')) {
     return response.json();
   }
-  
+
   return response.text();
 }
 
-// Auth API
 export async function signup(email, password) {
   return apiRequest('/auth/signup', {
     method: 'POST',
@@ -52,7 +50,6 @@ export async function getCurrentUser() {
   return apiRequest('/auth/me');
 }
 
-// Rooms API
 export async function createRoom(name) {
   return apiRequest('/rooms', {
     method: 'POST',
@@ -86,7 +83,6 @@ export async function getRoomMembers(roomId) {
   return apiRequest(`/rooms/members?room_id=${roomId}`);
 }
 
-// Messages API
 export async function getMessages(roomId, limit = 50, offset = 0) {
   return apiRequest(`/messages?room_id=${roomId}&limit=${limit}&offset=${offset}`);
 }

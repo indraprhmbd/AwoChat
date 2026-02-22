@@ -14,9 +14,9 @@ import (
 )
 
 type AuthHandler struct {
-	db           *database.DB
-	cfg          *config.Config
-	wsManager    *websocket.Manager
+	db            *database.DB
+	cfg           *config.Config
+	wsManager     *websocket.Manager
 	signupLimiter *ratelimiter.RateLimiter
 	loginLimiter  *ratelimiter.RateLimiter
 }
@@ -31,20 +31,17 @@ func NewAuthHandler(db *database.DB, cfg *config.Config, wsManager *websocket.Ma
 	}
 }
 
-// SignupRequest represents the signup request body
 type SignupRequest struct {
 	Email    string `json:"email"`
 	Password string `json:"password"`
 }
 
-// Signup handles user registration
 func (h *AuthHandler) Signup(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		return
 	}
 
-	// Rate limiting by IP
 	ip := getClientIP(r)
 	if !h.signupLimiter.Allow(ip) {
 		http.Error(w, "Too many signup attempts, please try again later", http.StatusTooManyRequests)
@@ -57,7 +54,6 @@ func (h *AuthHandler) Signup(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Validation
 	if req.Email == "" || req.Password == "" {
 		http.Error(w, "Email and password are required", http.StatusBadRequest)
 		return
@@ -68,14 +64,12 @@ func (h *AuthHandler) Signup(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Hash password
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
 	if err != nil {
 		http.Error(w, "Internal server error", http.StatusInternalServerError)
 		return
 	}
 
-	// Create user
 	ctx := r.Context()
 	user, err := h.db.CreateUser(ctx, req.Email, string(hashedPassword))
 	if err != nil {
@@ -87,7 +81,6 @@ func (h *AuthHandler) Signup(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Create session
 	expiresAt := time.Now().Add(h.cfg.Session.Expiration)
 	session, err := h.db.CreateSession(ctx, user.ID, expiresAt)
 	if err != nil {
@@ -95,7 +88,6 @@ func (h *AuthHandler) Signup(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Set session cookie
 	http.SetCookie(w, &http.Cookie{
 		Name:     h.cfg.Session.CookieName,
 		Value:    session.ID,
@@ -106,30 +98,26 @@ func (h *AuthHandler) Signup(w http.ResponseWriter, r *http.Request) {
 		Path:     "/",
 	})
 
-	// Return user info with session token (for WebSocket auth)
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(map[string]interface{}{
-		"id":           user.ID,
-		"email":        user.Email,
-		"created_at":   user.CreatedAt,
+		"id":            user.ID,
+		"email":         user.Email,
+		"created_at":    user.CreatedAt,
 		"session_token": session.ID,
 	})
 }
 
-// LoginRequest represents the login request body
 type LoginRequest struct {
 	Email    string `json:"email"`
 	Password string `json:"password"`
 }
 
-// Login handles user authentication
 func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		return
 	}
 
-	// Rate limiting by IP
 	ip := getClientIP(r)
 	if !h.loginLimiter.Allow(ip) {
 		http.Error(w, "Too many login attempts, please try again later", http.StatusTooManyRequests)
@@ -142,7 +130,6 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Get user by email
 	ctx := r.Context()
 	user, err := h.db.GetUserByEmail(ctx, req.Email)
 	if err != nil {
@@ -154,16 +141,13 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Verify password
 	if err := bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(req.Password)); err != nil {
 		http.Error(w, "Invalid credentials", http.StatusUnauthorized)
 		return
 	}
 
-	// Delete any existing sessions for this user
 	h.db.DeleteUserSessions(ctx, user.ID)
 
-	// Create new session
 	expiresAt := time.Now().Add(h.cfg.Session.Expiration)
 	session, err := h.db.CreateSession(ctx, user.ID, expiresAt)
 	if err != nil {
@@ -171,7 +155,6 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Set session cookie
 	http.SetCookie(w, &http.Cookie{
 		Name:     h.cfg.Session.CookieName,
 		Value:    session.ID,
@@ -182,7 +165,6 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 		Path:     "/",
 	})
 
-	// Return user info with session token (for WebSocket auth)
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(map[string]interface{}{
 		"id":            user.ID,
@@ -192,21 +174,17 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-// Logout handles user logout
 func (h *AuthHandler) Logout(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost && r.Method != http.MethodGet {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		return
 	}
 
-	// Get session from cookie
 	sessionID, err := r.Cookie(h.cfg.Session.CookieName)
 	if err == nil && sessionID.Value != "" {
-		// Delete session from database
 		h.db.DeleteSession(r.Context(), sessionID.Value)
 	}
 
-	// Clear cookie
 	http.SetCookie(w, &http.Cookie{
 		Name:     h.cfg.Session.CookieName,
 		Value:    "",
@@ -222,7 +200,6 @@ func (h *AuthHandler) Logout(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte("Logged out"))
 }
 
-// Me returns the current authenticated user
 func (h *AuthHandler) Me(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
@@ -243,7 +220,6 @@ func (h *AuthHandler) Me(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-// getSessionUser retrieves the user from the session cookie
 func getSessionUser(r *http.Request, db *database.DB, cfg *config.Config) *models.User {
 	cookie, err := r.Cookie(cfg.Session.CookieName)
 	if err != nil {
@@ -263,17 +239,13 @@ func getSessionUser(r *http.Request, db *database.DB, cfg *config.Config) *model
 	return user
 }
 
-// getClientIP extracts the client IP from the request
 func getClientIP(r *http.Request) string {
-	// Check X-Forwarded-For header (for reverse proxy setups)
 	if xff := r.Header.Get("X-Forwarded-For"); xff != "" {
 		return xff
 	}
-	// Fall back to RemoteAddr
 	return r.RemoteAddr
 }
 
-// parseSameSite converts string to http.SameSite
 func parseSameSite(s string) http.SameSite {
 	switch s {
 	case "Strict":

@@ -16,7 +16,6 @@ var (
 	ErrSessionNotFound   = errors.New("session not found")
 )
 
-// CreateUser creates a new user with the given email and password hash
 func (db *DB) CreateUser(ctx context.Context, email, passwordHash string) (*models.User, error) {
 	user := &models.User{
 		ID:           uuid.New().String(),
@@ -32,7 +31,6 @@ func (db *DB) CreateUser(ctx context.Context, email, passwordHash string) (*mode
 	).Scan(&user.CreatedAt)
 
 	if err != nil {
-		// Check for unique constraint violation
 		if isUniqueViolation(err) {
 			return nil, ErrUserExists
 		}
@@ -42,7 +40,6 @@ func (db *DB) CreateUser(ctx context.Context, email, passwordHash string) (*mode
 	return user, nil
 }
 
-// GetUserByEmail retrieves a user by email
 func (db *DB) GetUserByEmail(ctx context.Context, email string) (*models.User, error) {
 	user := &models.User{}
 
@@ -62,7 +59,6 @@ func (db *DB) GetUserByEmail(ctx context.Context, email string) (*models.User, e
 	return user, nil
 }
 
-// GetUserByID retrieves a user by ID
 func (db *DB) GetUserByID(ctx context.Context, id string) (*models.User, error) {
 	user := &models.User{}
 
@@ -82,7 +78,6 @@ func (db *DB) GetUserByID(ctx context.Context, id string) (*models.User, error) 
 	return user, nil
 }
 
-// CreateSession creates a new session for a user
 func (db *DB) CreateSession(ctx context.Context, userID string, expiresAt time.Time) (*models.Session, error) {
 	session := &models.Session{
 		ID:        uuid.New().String(),
@@ -104,7 +99,6 @@ func (db *DB) CreateSession(ctx context.Context, userID string, expiresAt time.T
 	return session, nil
 }
 
-// GetSession retrieves a session by ID, returns error if expired or not found
 func (db *DB) GetSession(ctx context.Context, id string) (*models.Session, error) {
 	session := &models.Session{}
 
@@ -124,27 +118,22 @@ func (db *DB) GetSession(ctx context.Context, id string) (*models.Session, error
 	return session, nil
 }
 
-// DeleteSession deletes a session by ID
 func (db *DB) DeleteSession(ctx context.Context, id string) error {
 	_, err := db.Pool.Exec(ctx, "DELETE FROM sessions WHERE id = $1", id)
 	return err
 }
 
-// DeleteUserSessions deletes all sessions for a user
 func (db *DB) DeleteUserSessions(ctx context.Context, userID string) error {
 	_, err := db.Pool.Exec(ctx, "DELETE FROM sessions WHERE user_id = $1", userID)
 	return err
 }
 
-// isUniqueViolation checks if the error is a unique constraint violation
 func isUniqueViolation(err error) bool {
-	// PostgreSQL unique violation error code: 23505
-	return err != nil && err.Error() != "" && 
+	return err != nil && err.Error() != "" &&
 		(err.Error() == "pq: duplicate key value violates unique constraint \"users_email_key\"" ||
 		 err.Error() == "ERROR: duplicate key value violates unique constraint \"users_email_key\" (SQLSTATE 23505)")
 }
 
-// isNotFound checks if the error is a no rows error
 func isNotFound(err error) bool {
 	return err != nil && err.Error() == "no rows in result set"
 }

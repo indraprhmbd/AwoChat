@@ -21,7 +21,6 @@ func NewMessageHandler(db *database.DB, cfg *config.Config, wsManager interface{
 	}
 }
 
-// List handles getting messages for a room with pagination
 func (h *MessageHandler) List(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
@@ -40,11 +39,10 @@ func (h *MessageHandler) List(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Parse pagination params
 	limitStr := r.URL.Query().Get("limit")
 	offsetStr := r.URL.Query().Get("offset")
 
-	limit := 50 // Default
+	limit := 50
 	offset := 0
 
 	if limitStr != "" {
@@ -61,14 +59,12 @@ func (h *MessageHandler) List(w http.ResponseWriter, r *http.Request) {
 
 	ctx := r.Context()
 
-	// Check membership
 	isMember, _ := h.db.IsRoomMember(ctx, user.ID, roomID)
 	if !isMember {
 		http.Error(w, "Access denied", http.StatusForbidden)
 		return
 	}
 
-	// Get messages with user details
 	messages, err := h.db.GetMessagesWithUserDetails(ctx, roomID, limit, offset)
 	if err != nil {
 		http.Error(w, "Failed to get messages", http.StatusInternalServerError)

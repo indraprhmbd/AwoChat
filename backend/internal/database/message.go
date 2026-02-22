@@ -13,7 +13,6 @@ var (
 	ErrMessageNotFound = errors.New("message not found")
 )
 
-// CreateMessage creates a new message in a room
 func (db *DB) CreateMessage(ctx context.Context, roomID, userID, content string) (*models.Message, error) {
 	msg := &models.Message{
 		RoomID:    roomID,
@@ -35,8 +34,6 @@ func (db *DB) CreateMessage(ctx context.Context, roomID, userID, content string)
 	return msg, nil
 }
 
-// GetMessagesByRoom retrieves messages for a room with pagination
-// Returns messages in descending order by created_at (newest first)
 func (db *DB) GetMessagesByRoom(ctx context.Context, roomID string, limit int, offset int) ([]*models.Message, error) {
 	rows, err := db.Pool.Query(
 		ctx,
@@ -52,7 +49,7 @@ func (db *DB) GetMessagesByRoom(ctx context.Context, roomID string, limit int, o
 	}
 	defer rows.Close()
 
-	messages := []*models.Message{} // Initialize as empty slice, not nil
+	messages := []*models.Message{}
 	for rows.Next() {
 		msg := &models.Message{}
 		if err := rows.Scan(&msg.ID, &msg.RoomID, &msg.UserID, &msg.Content, &msg.CreatedAt); err != nil {
@@ -61,7 +58,6 @@ func (db *DB) GetMessagesByRoom(ctx context.Context, roomID string, limit int, o
 		messages = append(messages, msg)
 	}
 
-	// Reverse to get ascending order (oldest first) for display
 	for i, j := 0, len(messages)-1; i < j; i, j = i+1, j-1 {
 		messages[i], messages[j] = messages[j], messages[i]
 	}
@@ -69,7 +65,6 @@ func (db *DB) GetMessagesByRoom(ctx context.Context, roomID string, limit int, o
 	return messages, rows.Err()
 }
 
-// GetMessageByID retrieves a single message by ID
 func (db *DB) GetMessageByID(ctx context.Context, id int64) (*models.Message, error) {
 	msg := &models.Message{}
 
@@ -89,7 +84,6 @@ func (db *DB) GetMessageByID(ctx context.Context, id int64) (*models.Message, er
 	return msg, nil
 }
 
-// GetMessagesWithUserDetails retrieves messages with user email information
 func (db *DB) GetMessagesWithUserDetails(ctx context.Context, roomID string, limit int, offset int) ([]map[string]interface{}, error) {
 	rows, err := db.Pool.Query(
 		ctx,
@@ -106,7 +100,7 @@ func (db *DB) GetMessagesWithUserDetails(ctx context.Context, roomID string, lim
 	}
 	defer rows.Close()
 
-	messages := []map[string]interface{}{} // Initialize as empty slice
+	messages := []map[string]interface{}{}
 	for rows.Next() {
 		var msg models.Message
 		var userEmail string
@@ -123,7 +117,6 @@ func (db *DB) GetMessagesWithUserDetails(ctx context.Context, roomID string, lim
 		})
 	}
 
-	// Reverse to get ascending order
 	for i, j := 0, len(messages)-1; i < j; i, j = i+1, j-1 {
 		messages[i], messages[j] = messages[j], messages[i]
 	}

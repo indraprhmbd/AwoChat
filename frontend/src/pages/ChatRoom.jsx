@@ -25,11 +25,9 @@ export default function ChatRoom() {
   const typingTimeoutRef = useRef(null);
   const loadedCountRef = useRef(50);
 
-  // Menu state
   const [showMenu, setShowMenu] = useState(false);
   const menuRef = useRef(null);
 
-  // Modal states
   const [showMembers, setShowMembers] = useState(false);
   const [showEditRoom, setShowEditRoom] = useState(false);
   const [showInviteLink, setShowInviteLink] = useState(false);
@@ -42,7 +40,6 @@ export default function ChatRoom() {
     onTyping: () => {},
   });
 
-  // Close menu when clicking outside
   useEffect(() => {
     function handleClickOutside(event) {
       if (menuRef.current && !menuRef.current.contains(event.target)) {
@@ -55,7 +52,6 @@ export default function ChatRoom() {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [showMenu]);
 
-  // Load initial messages and room info
   useEffect(() => {
     async function loadRoom() {
       try {
@@ -77,12 +73,10 @@ export default function ChatRoom() {
     loadRoom();
   }, [roomId]);
 
-  // Auto-scroll to bottom on new message
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  // Load more messages on scroll up
   const handleScroll = useCallback(async () => {
     const container = messagesContainerRef.current;
     if (!container || loadingMore || loadedCountRef.current < 50) return;
@@ -152,7 +146,6 @@ export default function ChatRoom() {
 
   return (
     <div className="chat-room-container">
-      {/* Header */}
       <div className="chat-header">
         <div className="chat-header-info">
           <button className="btn-back" onClick={() => navigate('/')} aria-label="Back to rooms">
@@ -198,7 +191,6 @@ export default function ChatRoom() {
         </div>
       </div>
 
-      {/* Messages */}
       <div className="messages-container" ref={messagesContainerRef} onScroll={handleScroll}>
         {loadingMore && <div className="loading-more">Loading older messages...</div>}
         {messages.map((msg) => (
@@ -223,7 +215,6 @@ export default function ChatRoom() {
         )}
       </div>
 
-      {/* Input */}
       <div className="message-input-container">
         <textarea
           value={newMessage}
@@ -240,7 +231,6 @@ export default function ChatRoom() {
         </button>
       </div>
 
-      {/* Modals */}
       {showMembers && room && (
         <MembersModal members={room.members} onClose={() => setShowMembers(false)} />
       )}

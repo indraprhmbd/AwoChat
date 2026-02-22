@@ -33,7 +33,6 @@ func New(cfg config.DatabaseConfig) (*DB, error) {
 		return nil, fmt.Errorf("failed to create connection pool: %w", err)
 	}
 
-	// Verify connection
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
@@ -48,7 +47,6 @@ func (db *DB) Close() {
 	db.Pool.Close()
 }
 
-// StartSessionCleanup runs a background goroutine that periodically removes expired sessions
 func StartSessionCleanup(ctx context.Context, db *DB, sessionExpiration time.Duration) {
 	ticker := time.NewTicker(10 * time.Minute)
 	defer ticker.Stop()
@@ -72,7 +70,6 @@ func cleanupExpiredSessions(ctx context.Context, db *DB, sessionExpiration time.
 		expiredTime,
 	)
 	if err != nil {
-		// Log error but don't crash - this is a cleanup task
 		fmt.Printf("Failed to cleanup expired sessions: %v\n", err)
 	}
 }
